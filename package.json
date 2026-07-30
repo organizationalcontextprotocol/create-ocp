@@ -1,0 +1,42 @@
+{
+  "name": "create-ocp",
+  "version": "0.2.0",
+  "description": "Scaffold an OCP (Organizational Context Protocol) organization — a git-native markdown substrate that humans read and AI agents consume.",
+  "bin": {
+    "create-ocp": "./cli.js"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "license": "MIT",
+  "author": "Max Forbang",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/organizationalcontextprotocol/create-ocp.git"
+  },
+  "homepage": "https://github.com/organizationalcontextprotocol/create-ocp#readme",
+  "bugs": "https://github.com/organizationalcontextprotocol/create-ocp/issues",
+  "keywords": [
+    "ocp",
+    "organizational-context-protocol",
+    "create",
+    "scaffold",
+    "context",
+    "substrate",
+    "markdown",
+    "wiki",
+    "knowledge-base",
+    "ai-agents"
+  ],
+  "files": [
+    "cli.js",
+    "templates.js",
+    "templates/"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
