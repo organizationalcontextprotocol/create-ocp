@@ -1,0 +1,106 @@
+# create-ocp
+
+Scaffold an **Organizational Context Protocol** organization: a git-native markdown substrate that
+a human reads in any editor and an AI agent consumes with no parsing library, no vendor client,
+and no integration.
+
+[![npm](https://img.shields.io/npm/v/create-ocp.svg)](https://www.npmjs.com/package/create-ocp)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+
+> ## Internal beta - MVP, not production ready
+>
+> **This is an internal beta MVP.** It is published to establish the package name and to exercise
+> the shape of the OCP surface against real canon - not to be depended on. The generated content
+> and the CLI flags will change without notice, it implements only part of the protocol, and it
+> has not been reviewed for correctness, security, or disclosure safety.
+>
+> **Do not ship this to clients or partners, or use it in production, without a full rework and
+> review first.** In particular the OCP reference renderer is **not** included yet.
+
+---
+
+## Where this is going: [ocp.wiki](https://ocp.wiki)
+
+*(Planned. The site is not live yet — this package ships ahead of it.)*
+
+**https://ocp.wiki** will be the single entry point for OCP: the specification, the conventions,
+and the patterns — published as an OCP substrate rendered by this protocol's own renderer. The
+spec site is the worked example of the thing it documents.
+
+It is built for both audiences at once. A human browses it. An **agent fetches it** — which is
+the point. Any coding agent (Claude, ChatGPT/Codex, Cursor, …) should be able to take a single
+line:
+
+> Create our company knowledge base using the patterns from https://ocp.wiki
+
+…and cascade the rest itself: read the spec, run `npm create ocp`, lay out the recursive
+organizational structure, and fill it with the company's own content. One instruction in, a
+conformant, agent-readable knowledge base out.
+
+**This package is what that cascade lands on.** The scaffolder is deliberately one-command dumb,
+so an agent — or a person with thirty seconds — reaches a working substrate with no decision tree
+in the way.
+
+## Quickstart
+
+```sh
+npx create-ocp acme-context
+```
+
+That is the whole thing. You get a conformant organization: a graph-root org, the substrate
+directories, a worked Initiative Kernel example, and a nested child org proving the recursion.
+
+```sh
+npx create-ocp acme-wiki --template wiki
+npx create-ocp acme -n "Acme Platform" -o acme --altitude agency --no-git
+```
+
+The full options table and the generated file tree are in the
+[package README on npm](https://www.npmjs.com/package/create-ocp).
+
+## What it generates
+
+**README-as-index.** Every directory has a `README.md` entry point whose `role:` frontmatter
+declares that directory's purpose. There is no `index.md` anywhere in OCP.
+
+**Five closed artifact types** — `note`, `adr`, `prompt`, `template`, `report`. Closed on purpose:
+five known types means five known schemas, so an OCP-aware tool is written once and works against
+every conformant organization. Extension happens through the `role:` field and an open `metadata:`
+object, neither of which needs ecosystem coordination.
+
+**Recursive, uniform structure.** Every organization holds the same canonical subdirectories, and
+may contain child organizations under `orgs/` to any depth. The structure scales by adding nodes,
+never by restructuring existing ones.
+
+**Access in the substrate.** Ownership is path-derived and admin authority cascades downward, so
+who-may-read-what is a property of the tree and its frontmatter, versioned in the same commit as
+the content — not a policy engine bolted onto an index afterward.
+
+## The quality bar
+
+> **Thirty-minute operability.** A first-time operator — human or agent — should be able to read
+> the root `README.md`, the relevant kernel definition, and an initiative's `README.md`, and run a
+> competent operation within half an hour.
+
+Complexity beyond that budget is a defect to be fixed with better entry points, not the cost of
+doing business. A standard nobody can start using in an afternoon is a standard nobody uses.
+
+## Status
+
+Source lands in this repository. The package is on npm today at `0.2.x`. The reference renderer —
+a Fumadocs application over `ocp-core` with a per-viewer access gate and scoped search — is the
+next build; the `wiki` template currently emits its configuration and specification rather than
+pretending to be it.
+
+## Related
+
+- [`core`](https://github.com/organizationalcontextprotocol/core) — `ocp-core`, the projection
+  library and the protocol's conformance surface
+- [The OCP organization](https://github.com/organizationalcontextprotocol)
+
+## License
+
+MIT © 2026 Max Forbang. See [LICENSE](./LICENSE).
+
+OCP is a standard, not a product. It is free on purpose: a standard derives its value from
+adoption, not from exclusion.
