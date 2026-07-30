@@ -19,27 +19,24 @@ and no integration.
 
 ---
 
-## Where this is going: [ocp.wiki](https://ocp.wiki)
+## Start at [ocp.wiki](https://ocp.wiki)
 
-*(Planned. The site is not live yet — this package ships ahead of it.)*
+**https://ocp.wiki** is the public home of OCP — the specification, the conventions, and a shelf
+of real, working examples, free to take.
 
-**https://ocp.wiki** will be the single entry point for OCP: the specification, the conventions,
-and the patterns — published as an OCP substrate rendered by this protocol's own renderer. The
-spec site is the worked example of the thing it documents.
-
-It is built for both audiences at once. A human browses it. An **agent fetches it** — which is
-the point. Any coding agent (Claude, ChatGPT/Codex, Cursor, …) should be able to take a single
-line:
+It reads as documentation to a person and as instructions to a machine. Point any coding agent
+(Claude, ChatGPT/Codex, Cursor, …) at it with one sentence:
 
 > Create our company knowledge base using the patterns from https://ocp.wiki
 
-…and cascade the rest itself: read the spec, run `npm create ocp`, lay out the recursive
-organizational structure, and fill it with the company's own content. One instruction in, a
-conformant, agent-readable knowledge base out.
+The agent handles the rest: it reads the spec, runs `npm create ocp`, lays out the recursive
+organizational structure, and fills it with your own material — leaving you a knowledge base you
+host, that your people and your agents share, and whose permissions follow the shape of the
+business instead of being stitched together afterward.
 
-**This package is what that cascade lands on.** The scaffolder is deliberately one-command dumb,
-so an agent — or a person with thirty seconds — reaches a working substrate with no decision tree
-in the way.
+**This package is where that instruction lands.** The scaffolder stays deliberately one-command
+dumb, so an agent — or an operator with half a minute and no appetite for tooling — gets a
+working substrate without a decision tree in the way.
 
 ## Quickstart
 
@@ -103,4 +100,6 @@ pretending to be it.
 MIT © 2026 Max Forbang. See [LICENSE](./LICENSE).
 
 OCP is a standard, not a product. It is free on purpose: a standard derives its value from
-adoption, not from exclusion.
+adoption, not from exclusion — and because an owner should be able to hand the repetitive work to
+agents and keep their attention on the part of the job only a person can do, without standing up
+an engineering function first.
