@@ -4,24 +4,6 @@
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/organizationalcontextprotocol/create-ocp/blob/main/LICENSE)
 [![node](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](https://nodejs.org)
 
-> ## Internal beta - MVP, not production ready
->
-> **This is an internal beta MVP.** It is published to establish the package name and to exercise
-> the shape of the OCP surface against real canon - not to be depended on. The generated content
-> and the CLI flags will change without notice, it implements only part of the protocol, and it
-> has not been reviewed for correctness, security, or disclosure safety.
->
-> **Do not ship this to clients or partners, or use it in production, without a full rework and
-> review first.** Specifically not yet done:
->
-> - **The OCP reference renderer is not included.** The `wiki` template emits the config a renderer consumes plus a specification of what it will be — not an application. Rendering, search, and the AI panel are unbuilt.
-> - **No access-control wiring.** The scaffold declares the organizational structure that access policy is *derived from*; nothing here authenticates a viewer or enforces a boundary.
-> - **The seed content is a starting point, not reviewed organizational canon.** It explains the conventions correctly; it has not had the review an adopter's real substrate deserves.
-> - **No migration path for existing documents.** This scaffolds a new organization; it does not ingest, classify, or convert a folder of documents you already have.
-> - **Conformance has a mechanical check, not a formal suite.** `npx ocp-core validate` (ocp-core ≥ 0.3.0) independently validates a scaffolded substrate — entry points, frontmatter, the closed type set, Core Canon blocks — but the protocol has no formal conformance suite beyond it.
-
----
-
 `create-ocp` scaffolds an **Organizational Context Protocol** organization: a git-native markdown
 substrate that a human reads in any editor and an AI agent consumes with no parsing library, no
 vendor client, and no integration.
@@ -215,7 +197,7 @@ of doing business. A standard nobody can start using in an afternoon is a standa
 ## Divergence from the plan of record
 
 The Phase 0 plan specifies that v1 ships one template — `wiki`, the reference renderer — with
-`substrate` deferred. **This beta inverts that, deliberately:** the renderer is not built yet, and
+`substrate` deferred. **This package inverts that, deliberately:** the renderer is not built yet, and
 a `wiki` template that emitted a fake application would be a lie. So `substrate` is the default and
 is real, and `wiki` adds the renderer's *configuration and specification* without pretending to be
 the renderer. The flag shape is preserved, so landing the real renderer later is an implementation
@@ -271,7 +253,7 @@ rationed to whoever can afford the implementation.
 ## Status
 
 Source lives in [organizationalcontextprotocol/create-ocp](https://github.com/organizationalcontextprotocol/create-ocp).
-The package is on npm at `0.2.x`. The reference renderer — a Fumadocs application over `ocp-core`
+The package is on npm at `0.3.x`. The reference renderer — a Fumadocs application over `ocp-core`
 with a per-viewer access gate and scoped search — is the next build; until it lands, the `wiki`
 template emits its configuration and specification rather than pretending to be it.
 
