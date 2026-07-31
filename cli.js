@@ -3,16 +3,20 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const readline = require('node:readline/promises');
 const { spawnSync } = require('node:child_process');
 const { parseArgs } = require('node:util');
 
 const templates = require('./templates');
 const pkg = require('./package.json');
 
-const HELP = `Usage: create-ocp <directory> [options]
+const HELP = `Usage: npm create ocp <directory> [options]
 
 Scaffold an OCP (Organizational Context Protocol) organization: a git-native
 markdown substrate that humans read and AI agents consume.
+
+Run it with no arguments in a terminal and it will walk you through the
+options instead.
 
 Options:
   -t, --template <substrate|wiki>  What to scaffold (default: substrate)
@@ -28,9 +32,14 @@ Options:
   -v, --version                    Print the create-ocp version and exit
 
 Examples:
-  npx create-ocp acme-context
-  npx create-ocp acme-wiki --template wiki
+  npm create ocp                       walk me through it
+  npm create ocp acme-context
+  npm create ocp acme-wiki -- --template wiki
   npx create-ocp acme -n "Acme Platform" -o acme -u max --no-git
+
+Passing flags through "npm create" needs a "--" separator, because npm claims
+--name, --force, --help and --version for itself before they reach this CLI.
+"npx create-ocp" takes them directly. Both run the same program.
 
 The spec, the conventions, and the patterns: https://ocp.wiki
 Scaffolding as an AI agent: https://ocp.wiki/genesis.md
@@ -40,55 +49,94 @@ Scaffolding as an AI agent: https://ocp.wiki/genesis.md
 // with a help hint — never as a stack trace.
 class UsageError extends Error {}
 
-function main(argv) {
-  let parsed;
+/**
+ * Interactive mode is offered ONLY when the invocation carries no target
+ * directory AND both ends of the terminal are a TTY.
+ *
+ * The second half is load-bearing, not defensive. This CLI is what the
+ * https://ocp.wiki/genesis.md one-shot funnel lands on: an agent, a CI job, or
+ * anything reading our stdout through a pipe must never be handed a prompt,
+ * because nothing is there to answer it and the run would hang forever rather
+ * than fail. A missing directory in a non-TTY stays what it has always been —
+ * usage on stderr, exit 1.
+ */
+function isInteractive() {
+  return Boolean(process.stdin.isTTY && process.stdout.isTTY);
+}
+
+/**
+ * The menu itself, over an injected `ask(label, fallback)`. Kept free of
+ * readline and of stdout so the defaulting and the re-ask loops are testable
+ * without a pseudo-terminal.
+ *
+ * Every answer has a default, so the whole menu is four carriage returns if you
+ * like what it proposes.
+ */
+async function collectAnswers(ask, note = () => {}) {
+  let directory = '';
+  while (directory === '') {
+    directory = (await ask('Directory', '')) || '';
+    if (directory === '') note('  A target directory is required.');
+  }
+
+  const name = await ask('Display name', templates.humanize(path.basename(directory)));
+
+  let template = '';
+  while (!templates.TEMPLATES.includes(template)) {
+    template = await ask(`Template [${templates.TEMPLATES.join('/')}]`, 'substrate');
+    if (!templates.TEMPLATES.includes(template)) {
+      note(`  Expected one of: ${templates.TEMPLATES.join(', ')}`);
+    }
+  }
+
+  const user = await ask('Seed user', 'founder');
+  return { directory, name, template, user };
+}
+
+async function promptForOptions() {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  const ask = async (label, fallback) => {
+    const suffix = fallback === undefined || fallback === '' ? '' : ` (${fallback})`;
+    const answer = (await rl.question(`  ${label}${suffix}: `)).trim();
+    return answer === '' ? fallback : answer;
+  };
   try {
-    parsed = parseArgs({
-      args: argv,
-      strict: true,
-      allowPositionals: true,
-      options: {
-        template: { type: 'string', short: 't' },
-        name: { type: 'string', short: 'n' },
-        'org-id': { type: 'string', short: 'o' },
-        user: { type: 'string', short: 'u' },
-        'no-git': { type: 'boolean' },
-        force: { type: 'boolean', short: 'f' },
-        help: { type: 'boolean', short: 'h' },
-        version: { type: 'boolean', short: 'v' },
-      },
-    });
-  } catch (error) {
-    throw new UsageError(error.message);
+    process.stdout.write('\nScaffold an OCP organization. Press enter to accept a default.\n\n');
+    const answers = await collectAnswers(ask, (line) => process.stdout.write(`${line}\n`));
+    process.stdout.write('\n');
+    return answers;
+  } finally {
+    rl.close();
   }
+}
 
-  const { values, positionals } = parsed;
+/**
+ * The flag-form command equivalent to what the menu just collected. Printed
+ * after an interactive run so the menu teaches the flags rather than hiding
+ * them — the second time, an operator can skip it.
+ */
+function equivalentCommand(answers) {
+  const parts = ['npm create ocp', answers.directory];
+  const flags = [];
+  if (answers.name !== templates.humanize(path.basename(answers.directory))) {
+    flags.push(`--name ${JSON.stringify(answers.name)}`);
+  }
+  if (answers.template !== 'substrate') flags.push(`--template ${answers.template}`);
+  if (answers.user !== 'founder') flags.push(`--user ${answers.user}`);
+  if (flags.length > 0) parts.push('--', ...flags);
+  return parts.join(' ');
+}
 
-  if (values.help) {
-    process.stdout.write(HELP);
-    return 0;
-  }
-  if (values.version) {
-    process.stdout.write(`${pkg.version}\n`);
-    return 0;
-  }
-  if (positionals.length === 0) {
-    process.stderr.write(HELP);
-    return 1;
-  }
-  if (positionals.length > 1) {
-    throw new UsageError(
-      `unexpected extra argument "${positionals[1]}" — pass exactly one target directory`
-    );
-  }
+function scaffold(options) {
+  const { directory, displayName, orgId, userId, template, noGit, force, equivalent } = options;
 
-  const template = values.template ?? 'substrate';
   if (!templates.TEMPLATES.includes(template)) {
     throw new UsageError(
       `unknown template "${template}" (expected one of: ${templates.TEMPLATES.join(', ')})`
     );
   }
-  const targetDir = path.resolve(process.cwd(), positionals[0]);
+
+  const targetDir = path.resolve(process.cwd(), directory);
   const basename = path.basename(targetDir);
 
   let stat = null;
@@ -100,7 +148,7 @@ function main(argv) {
   if (stat && !stat.isDirectory()) {
     throw new UsageError(`target "${targetDir}" already exists and is not a directory`);
   }
-  if (stat && fs.readdirSync(targetDir).length > 0 && !values.force) {
+  if (stat && fs.readdirSync(targetDir).length > 0 && !force) {
     throw new UsageError(
       `target directory "${targetDir}" is not empty; rerun with --force to scaffold into it anyway`
     );
@@ -111,9 +159,9 @@ function main(argv) {
     fileMap = templates.files({
       basename,
       template,
-      displayName: values.name,
-      orgId: values['org-id'],
-      userId: values.user,
+      displayName,
+      orgId,
+      userId,
       now: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
     });
   } catch (error) {
@@ -135,7 +183,7 @@ function main(argv) {
   }
 
   let gitNote = 'Skipped "git init" (--no-git).';
-  if (!values['no-git']) {
+  if (!noGit) {
     let result;
     try {
       result = spawnSync('git', ['init', '--quiet'], { cwd: targetDir, stdio: 'ignore' });
@@ -152,10 +200,10 @@ function main(argv) {
 
   const relTarget = path.relative(process.cwd(), targetDir);
   const displayTarget = relTarget === '' ? '.' : relTarget.startsWith('..') ? targetDir : relTarget;
-  const displayName = values.name ?? templates.humanize(basename);
+  const resolvedName = displayName ?? templates.humanize(basename);
 
   const lines = [];
-  lines.push(`Scaffolded the OCP ${template} "${displayName}" in ${displayTarget}`);
+  lines.push(`Scaffolded the OCP ${template} "${resolvedName}" in ${displayTarget}`);
   lines.push('');
   lines.push(templates.renderTree(basename, Object.keys(fileMap)));
   lines.push('');
@@ -168,6 +216,12 @@ function main(argv) {
   }
   lines.push(gitNote);
   lines.push('');
+  if (equivalent) {
+    lines.push('Same result without the questions next time:');
+    lines.push('');
+    lines.push(`  ${equivalent}`);
+    lines.push('');
+  }
   lines.push('Next steps:');
   lines.push('');
   if (displayTarget !== '.') lines.push(`  cd ${displayTarget}`);
@@ -201,14 +255,97 @@ function main(argv) {
   return 0;
 }
 
-try {
-  process.exitCode = main(process.argv.slice(2));
-} catch (error) {
-  const usage = error instanceof UsageError;
-  const message = usage ? error.message : `unexpected error: ${error.message}`;
-  process.stderr.write(`create-ocp: ${message}\n`);
-  if (usage) {
-    process.stderr.write('Run "create-ocp --help" for usage.\n');
+async function main(argv) {
+  let parsed;
+  try {
+    parsed = parseArgs({
+      args: argv,
+      strict: true,
+      allowPositionals: true,
+      options: {
+        template: { type: 'string', short: 't' },
+        name: { type: 'string', short: 'n' },
+        'org-id': { type: 'string', short: 'o' },
+        user: { type: 'string', short: 'u' },
+        'no-git': { type: 'boolean' },
+        force: { type: 'boolean', short: 'f' },
+        help: { type: 'boolean', short: 'h' },
+        version: { type: 'boolean', short: 'v' },
+      },
+    });
+  } catch (error) {
+    throw new UsageError(error.message);
   }
-  process.exitCode = 1;
+
+  const { values, positionals } = parsed;
+
+  if (values.help) {
+    process.stdout.write(HELP);
+    return 0;
+  }
+  if (values.version) {
+    process.stdout.write(`${pkg.version}\n`);
+    return 0;
+  }
+  if (positionals.length > 1) {
+    throw new UsageError(
+      `unexpected extra argument "${positionals[1]}" — pass exactly one target directory`
+    );
+  }
+
+  if (positionals.length === 0) {
+    if (!isInteractive()) {
+      process.stderr.write(HELP);
+      return 1;
+    }
+    const answers = await promptForOptions();
+    return scaffold({
+      directory: answers.directory,
+      displayName: answers.name,
+      orgId: values['org-id'],
+      userId: answers.user,
+      template: answers.template,
+      noGit: values['no-git'],
+      force: values.force,
+      equivalent: equivalentCommand(answers),
+    });
+  }
+
+  return scaffold({
+    directory: positionals[0],
+    displayName: values.name,
+    orgId: values['org-id'],
+    userId: values.user,
+    template: values.template ?? 'substrate',
+    noGit: values['no-git'],
+    force: values.force,
+    equivalent: null,
+  });
+}
+
+// Exported for tests. The bin behavior is guarded on being the entry point, so
+// requiring this file runs nothing.
+module.exports = { collectAnswers, equivalentCommand, isInteractive };
+
+if (require.main === module) {
+  main(process.argv.slice(2))
+    .then((code) => {
+      process.exitCode = code;
+    })
+    .catch((error) => {
+      // A Ctrl-C at a prompt closes stdin, which rejects the pending question.
+      // That is a deliberate exit, not a failure to report as one.
+      if (error && error.code === 'ABORT_ERR') {
+        process.stdout.write('\nCancelled. Nothing was written.\n');
+        process.exitCode = 130;
+        return;
+      }
+      const usage = error instanceof UsageError;
+      const message = usage ? error.message : `unexpected error: ${error.message}`;
+      process.stderr.write(`create-ocp: ${message}\n`);
+      if (usage) {
+        process.stderr.write('Run "create-ocp --help" for usage.\n');
+      }
+      process.exitCode = 1;
+    });
 }

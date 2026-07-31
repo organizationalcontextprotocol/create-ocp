@@ -1,6 +1,6 @@
 {
   "name": "create-ocp",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Scaffold an OCP (Organizational Context Protocol) organization — a git-native markdown substrate that humans read and AI agents consume.",
   "bin": {
     "create-ocp": "cli.js"

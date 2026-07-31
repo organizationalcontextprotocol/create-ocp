@@ -31,27 +31,50 @@ substrate with no decision tree in the way.
 ## Quickstart
 
 ```sh
-npx create-ocp acme-context
+npm create ocp
 ```
 
-That is the whole thing. You now have a conformant organization: a graph-root org, the substrate
-directories, a worked Initiative Kernel example, and a nested child org proving the recursion.
+Run it bare in a terminal and it walks you through four questions — directory, display name,
+template, seed user — each with a default you accept by pressing enter. It finishes by printing
+the flag-form command equivalent to what you answered, so the second time you can skip the menu.
+
+Or name the directory and skip the questions entirely:
 
 ```sh
-npx create-ocp acme-wiki --template wiki
+npm create ocp acme-context
+```
+
+Either way you now have a conformant organization: a graph-root org, the substrate directories, a
+worked Initiative Kernel example, and a nested child org proving the recursion.
+
+### Passing flags
+
+**`npm create` claims `--name`, `--force`, `--help` and `--version` for itself** before they reach
+this CLI, so flags go after a `--` separator. `npx create-ocp` takes them directly. Both run the
+same program:
+
+```sh
+npm create ocp acme-wiki -- --template wiki
 npx create-ocp acme -n "Acme Platform" -o acme -u max --no-git
 ```
+
+Without the separator npm silently eats the flag and passes its *value* through as a positional —
+`npm create ocp acme --name "Acme Co"` reaches the CLI as two directories and is rejected.
 
 ## For AI agents
 
 If you are an agent standing up this knowledge base for an operator, the whole loop is:
 
 ```sh
-npx create-ocp@latest <org-slug> --name "<Organization Display Name>"
+npm create ocp@latest <org-slug>
 cd <org-slug>
 # populate from the operator's own context — AGENTS.md → "Populating a fresh scaffold"
 npx ocp-core validate
 ```
+
+Always pass the directory. With one, the CLI is non-interactive; bare *and* attached to a terminal
+it opens the menu, which an unattended run does not want. (Bare with no terminal — a pipe, CI, an
+agent's shell — prints usage and exits 1 rather than blocking on a prompt, so it cannot hang.)
 
 Scaffold, then populate the stubs from context you legitimately hold — the conversation, shared
 documents, existing repositories — never inventing facts: stub what you cannot ground and list

@@ -8,6 +8,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 const CLI = path.join(__dirname, '..', 'cli.js');
+const cli = require('../cli.js');
 const pkg = require('../package.json');
 const templates = require('../templates');
 
@@ -152,22 +153,100 @@ test('errors when the target exists as a file', () => {
   });
 });
 
-test('missing directory argument prints help to stderr and exits 1', () => {
+// THE agent-safety guarantee. This CLI is what the ocp.wiki one-shot funnel
+// lands on, so a bare invocation without a terminal must fail fast rather than
+// block on a prompt nothing is there to answer. spawnSync pipes stdio, so this
+// is exactly the shape an agent, a CI job, or a `| tee` sees — and if the guard
+// ever regresses, this test hangs instead of passing.
+test('missing directory argument in a non-TTY prints help to stderr and exits 1', () => {
   const result = runCli([]);
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /Usage: create-ocp/);
+  assert.match(result.stderr, /Usage: npm create ocp/);
   assert.equal(result.stdout, '');
+});
+
+test('isInteractive requires BOTH stdin and stdout to be a TTY', () => {
+  const stdin = Object.getOwnPropertyDescriptor(process, 'stdin');
+  const stdout = Object.getOwnPropertyDescriptor(process, 'stdout');
+  const set = (inTTY, outTTY) => {
+    Object.defineProperty(process, 'stdin', { value: { isTTY: inTTY }, configurable: true });
+    Object.defineProperty(process, 'stdout', { value: { isTTY: outTTY }, configurable: true });
+  };
+  try {
+    set(true, true);
+    assert.equal(cli.isInteractive(), true);
+    for (const [i, o] of [[true, false], [false, true], [false, false]]) {
+      set(i, o);
+      assert.equal(cli.isInteractive(), false, `stdin=${i} stdout=${o} must not prompt`);
+    }
+  } finally {
+    Object.defineProperty(process, 'stdin', stdin);
+    Object.defineProperty(process, 'stdout', stdout);
+  }
 });
 
 test('-h exits 0 with usage on stdout; -v prints the exact version', () => {
   const help = runCli(['-h']);
   assert.equal(help.status, 0);
-  assert.match(help.stdout, /Usage: create-ocp/);
+  assert.match(help.stdout, /Usage: npm create ocp/);
   assert.match(help.stdout, /ocp\.wiki/);
+  // npm eats --name/--force/--help/--version before they reach us; the help
+  // must say so, because the failure without a "--" is silent and confusing.
+  assert.match(help.stdout, /"--" separator/);
 
   const version = runCli(['-v']);
   assert.equal(version.status, 0);
   assert.equal(version.stdout, `${pkg.version}\n`);
+});
+
+test('the menu accepts every default with bare carriage returns', async () => {
+  const answers = await cli.collectAnswers(async (label, fallback) =>
+    label.startsWith('Directory') ? 'acme-context' : fallback
+  );
+  assert.deepEqual(answers, {
+    directory: 'acme-context',
+    name: 'Acme Context',
+    template: 'substrate',
+    user: 'founder',
+  });
+});
+
+test('the menu re-asks until a directory and a known template are given', async () => {
+  const asked = [];
+  const scripted = ['', '', 'acme', 'Acme Co', 'blog', 'wiki', 'max'];
+  const answers = await cli.collectAnswers(async (label) => {
+    asked.push(label);
+    return scripted.shift();
+  });
+  assert.deepEqual(answers, {
+    directory: 'acme',
+    name: 'Acme Co',
+    template: 'wiki',
+    user: 'max',
+  });
+  // Two empty directories and one bad template each cost an extra question.
+  assert.equal(asked.filter((l) => l.startsWith('Directory')).length, 3);
+  assert.equal(asked.filter((l) => l.startsWith('Template')).length, 2);
+});
+
+test('the printed equivalent command omits defaults and separates flags with --', () => {
+  assert.equal(
+    cli.equivalentCommand({
+      directory: 'acme',
+      name: 'Acme',
+      template: 'substrate',
+      user: 'founder',
+    }),
+    'npm create ocp acme',
+    'all defaults means no flags and no separator'
+  );
+  const full = cli.equivalentCommand({
+    directory: 'acme',
+    name: 'Acme Platform',
+    template: 'wiki',
+    user: 'max',
+  });
+  assert.equal(full, 'npm create ocp acme -- --name "Acme Platform" --template wiki --user max');
 });
 
 test('an unknown template is rejected before writing anything', () => {
