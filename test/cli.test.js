@@ -75,7 +75,7 @@ test('the root README declares the graph-root organization from the flags', () =
   withTmpDir((dir) => {
     const target = path.join(dir, 'whatever');
     const result = runCli([
-      target, '-n', 'Acme Platform', '-o', 'acme', '-u', 'max', '--altitude', 'agency', '--no-git',
+      target, '-n', 'Acme Platform', '-o', 'acme', '-u', 'max', '--no-git',
     ]);
     assert.equal(result.status, 0, result.stderr);
     const readme = fs.readFileSync(path.join(target, 'README.md'), 'utf8');
@@ -85,6 +85,32 @@ test('the root README declares the graph-root organization from the flags', () =
     assert.match(readme, /^role: org_definition$/m);
     assert.ok(fs.existsSync(path.join(target, '_users', 'max', 'README.md')));
   });
+});
+
+// The `org_type` retirement (2026-07-21) took the whole positional axis out of
+// frontmatter, not just the field name. Altitude survives as vocabulary you say,
+// never as a key an artifact declares — including under the open `metadata:`
+// object, which is otherwise a legal home for user-domain fields.
+test('no artifact declares an altitude or org_type in frontmatter', () => {
+  const files = templates.files({ basename: 'acme', template: 'wiki', now: NOW });
+  for (const [rel, contents] of Object.entries(files)) {
+    if (!rel.endsWith('.md')) continue;
+    const frontmatter = /^---\n([\s\S]*?)\n---/.exec(contents);
+    if (!frontmatter) continue;
+    assert.doesNotMatch(frontmatter[1], /^\s*altitude:/m, `${rel} declares an altitude`);
+    assert.doesNotMatch(frontmatter[1], /^\s*org_type:/m, `${rel} declares an org_type`);
+  }
+});
+
+test('the scaffold never advertises altitude as a declared field', () => {
+  const files = templates.files({ basename: 'acme', template: 'wiki', now: NOW });
+  for (const [rel, contents] of Object.entries(files)) {
+    assert.doesNotMatch(
+      contents,
+      /altitude is declared|declares? \S*altitude|altitude:.*(?:platform|agency|tenant|account)/i,
+      `${rel} claims altitude is declared`
+    );
+  }
 });
 
 test('defaults derive the org id and display name from the directory name', () => {
@@ -144,18 +170,23 @@ test('-h exits 0 with usage on stdout; -v prints the exact version', () => {
   assert.equal(version.stdout, `${pkg.version}\n`);
 });
 
-test('unknown template and unknown altitude are rejected before writing anything', () => {
+test('an unknown template is rejected before writing anything', () => {
   withTmpDir((dir) => {
     const target = path.join(dir, 'nope');
     const badTemplate = runCli([target, '-t', 'blog', '--no-git']);
     assert.equal(badTemplate.status, 1);
     assert.match(badTemplate.stderr, /unknown template/);
-
-    const badAltitude = runCli([target, '--altitude', 'galaxy', '--no-git']);
-    assert.equal(badAltitude.status, 1);
-    assert.match(badAltitude.stderr, /unknown altitude/);
-
     assert.equal(fs.existsSync(target), false, 'nothing was written');
+  });
+});
+
+// The flag was removed with the altitude axis rather than left as a silent
+// no-op: a flag that accepts a value and writes it nowhere is a lie.
+test('the retired --altitude flag is rejected as an unknown option', () => {
+  withTmpDir((dir) => {
+    const result = runCli([path.join(dir, 'nope'), '--altitude', 'agency', '--no-git']);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /create-ocp:/);
   });
 });
 
@@ -234,9 +265,8 @@ test('scaffolding is deterministic for the same inputs and injected clock', () =
   for (const key of Object.keys(a)) assert.equal(a[key], b[key], `${key} is stable`);
 });
 
-test('templates.files rejects an unknown template, altitude, or a missing clock', () => {
+test('templates.files rejects an unknown template or a missing clock', () => {
   assert.throws(() => templates.files({ basename: 'a', template: 'blog', now: NOW }), /unknown template/);
-  assert.throws(() => templates.files({ basename: 'a', altitude: 'galaxy', now: NOW }), /unknown altitude/);
   assert.throws(() => templates.files({ basename: 'a' }), /deterministic/);
 });
 

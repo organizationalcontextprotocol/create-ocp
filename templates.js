@@ -12,14 +12,14 @@ const wikiFiles = require('./templates/wiki');
 
 const TEMPLATES = Object.freeze(['substrate', 'wiki']);
 
-// P4: altitudes are positional vocabulary an organization may occupy, declared
-// in frontmatter and never encoded in a path. `user` is omitted here because a
-// user is not a scaffoldable graph root; users live under `_users/`.
-const ALTITUDES = Object.freeze(['platform', 'tenant', 'agency', 'account']);
+// P4: altitude (platform / tenant / agency / account / user) is DESCRIPTIVE
+// vocabulary for talking about an organization's position — it is written into
+// no file. The scaffold therefore takes no altitude input: there is nothing to
+// put it in. The `org_type` field was retired 2026-07-21 and the whole axis went
+// with it; the only structural fact an artifact records is `parent_org_id`.
 
 const DEFAULTS = Object.freeze({
   userId: 'founder',
-  altitude: 'platform',
   childOrgId: 'example-client',
   childOrgDisplayName: 'Example Client',
   initiativeId: 'example-initiative',
@@ -73,10 +73,6 @@ function normalize(input) {
   if (!TEMPLATES.includes(template)) {
     throw new Error(`unknown template "${template}" (expected one of: ${TEMPLATES.join(', ')})`);
   }
-  const altitude = given.altitude || DEFAULTS.altitude;
-  if (!ALTITUDES.includes(altitude)) {
-    throw new Error(`unknown altitude "${altitude}" (expected one of: ${ALTITUDES.join(', ')})`);
-  }
   if (!given.now) {
     throw new Error('a "now" RFC3339 timestamp is required so scaffolds are deterministic');
   }
@@ -92,7 +88,6 @@ function normalize(input) {
 
   return {
     template,
-    altitude,
     now: String(given.now),
     orgId,
     displayName,
@@ -159,4 +154,4 @@ function renderTree(rootLabel, paths) {
   return lines.join('\n');
 }
 
-module.exports = { TEMPLATES, ALTITUDES, files, renderTree, defaultDescription, kebab, humanize };
+module.exports = { TEMPLATES, files, renderTree, defaultDescription, kebab, humanize };

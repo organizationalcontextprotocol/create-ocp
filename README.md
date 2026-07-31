@@ -18,7 +18,7 @@
 > - **No access-control wiring.** The scaffold declares the organizational structure that access policy is *derived from*; nothing here authenticates a viewer or enforces a boundary.
 > - **The seed content is a starting point, not reviewed organizational canon.** It explains the conventions correctly; it has not had the review an adopter's real substrate deserves.
 > - **No migration path for existing documents.** This scaffolds a new organization; it does not ingest, classify, or convert a folder of documents you already have.
-> - **Conformance is asserted by this package's own tests only.** There is no independent validator, and the protocol has no formal conformance suite yet.
+> - **Conformance has a mechanical check, not a formal suite.** `npx ocp-core validate` (ocp-core ≥ 0.3.0) independently validates a scaffolded substrate — entry points, frontmatter, the closed type set, Core Canon blocks — but the protocol has no formal conformance suite beyond it.
 
 ---
 
@@ -57,8 +57,25 @@ directories, a worked Initiative Kernel example, and a nested child org proving 
 
 ```sh
 npx create-ocp acme-wiki --template wiki
-npx create-ocp acme -n "Acme Platform" -o acme --altitude agency --no-git
+npx create-ocp acme -n "Acme Platform" -o acme -u max --no-git
 ```
+
+## For AI agents
+
+If you are an agent standing up this knowledge base for an operator, the whole loop is:
+
+```sh
+npx create-ocp@latest <org-slug> --name "<Organization Display Name>"
+cd <org-slug>
+# populate from the operator's own context — AGENTS.md → "Populating a fresh scaffold"
+npx ocp-core validate
+```
+
+Scaffold, then populate the stubs from context you legitimately hold — the conversation, shared
+documents, existing repositories — never inventing facts: stub what you cannot ground and list
+every stub in your final report. Validate until it prints `OK`, commit, and report the resulting
+tree as an outline. The complete directive, including the no-shell fallback:
+**[ocp.wiki/genesis.md](https://ocp.wiki/genesis.md)**.
 
 ## Options
 
@@ -68,14 +85,16 @@ npx create-ocp acme -n "Acme Platform" -o acme --altitude agency --no-git
 | `-n, --name <display name>` | humanized directory name | The organization's `display_name`. |
 | `-o, --org-id <kebab-id>` | kebab-cased directory name | The organization's `org_id`. |
 | `-u, --user <user-id>` | `founder` | Seeds `_users/<id>/` with a profile and memberships. |
-| `--altitude <altitude>` | `platform` | Declared altitude: `platform`, `tenant`, `agency`, or `account`. |
 | `--no-git` | off | Skip `git init`. |
 | `-f, --force` | off | Scaffold into a non-empty directory. Any file that already exists is **kept, never overwritten**, and listed in the summary. |
 | `-h, --help` | — | Print usage and exit 0. |
 | `-v, --version` | — | Print the version and exit 0. |
 
-A missing target directory prints usage to stderr and exits 1. An unknown template or altitude
-fails before anything is written. If `git` is missing, the scaffold still succeeds with a warning.
+A missing target directory prints usage to stderr and exits 1. An unknown template fails before
+anything is written. If `git` is missing, the scaffold still succeeds with a warning.
+
+*(`--altitude` was removed in 0.3.0. Altitude is descriptive vocabulary that no artifact records,
+so the flag had nowhere to write and was accepted as a silent no-op. See below.)*
 
 ## What you get
 
@@ -161,9 +180,14 @@ builder uses two altitudes, a direct-operating agency three, a white-label resel
 The structure scales by *adding nodes, never by restructuring existing ones* — when an agency
 starts white-labeling, its existing subtree slots under a new parent without a single file moving.
 
-**Altitude is declared, not path-encoded.** `platform`, `tenant`, `agency`, `account`, `user` are
-positional types an organization *may* occupy, declared in frontmatter. That is what lets one
-standard serve a two-person shop and a multi-tenant platform without either distorting the other.
+**Altitude is vocabulary, not schema.** `platform`, `tenant`, `agency`, `account`, `user` are
+descriptive words for positions an organization *may* occupy — useful for planning a tree's shape,
+written into no file, and read by no tool. The `org_type` frontmatter field was retired 2026-07-21
+and the whole axis went with it: never author `altitude:` either, at the top level or under
+`metadata:`. The single structural fact an artifact records is `parent_org_id` — `null` at the graph
+root, the parent's id everywhere else — and root-vs-child is the only structural distinction OCP
+has. That is what lets one standard serve a two-person shop and a multi-tenant platform without
+either distorting the other.
 
 **Access lives in the substrate.** Ownership is path-derived and admin authority cascades
 downward, so who-may-read-what is a property of the tree and its frontmatter, versioned in the
@@ -204,6 +228,7 @@ policy, and take a scoped slice:
 
 ```sh
 npm install ocp-core
+npx ocp-core validate   # the same package machine-checks a scaffold's conformance
 ```
 
 See [ocp-core](https://github.com/organizationalcontextprotocol/core) — the projection library

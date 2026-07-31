@@ -22,8 +22,6 @@ Options:
                                    (default: humanized target directory name)
   -o, --org-id <kebab-id>          Organization id (default: kebab-cased directory name)
   -u, --user <user-id>             Seed user under _users/ (default: founder)
-      --altitude <altitude>        Declared altitude: ${templates.ALTITUDES.join(' | ')}
-                                   (default: platform)
       --no-git                     Skip running "git init" in the new project
   -f, --force                      Scaffold into a non-empty directory
   -h, --help                       Print this help and exit
@@ -32,9 +30,10 @@ Options:
 Examples:
   npx create-ocp acme-context
   npx create-ocp acme-wiki --template wiki
-  npx create-ocp acme -n "Acme Platform" -o acme --altitude agency --no-git
+  npx create-ocp acme -n "Acme Platform" -o acme -u max --no-git
 
-The spec, the conventions, and the patterns: https://ocp.wiki (planned)
+The spec, the conventions, and the patterns: https://ocp.wiki
+Scaffolding as an AI agent: https://ocp.wiki/genesis.md
 `;
 
 // Errors caused by how the CLI was invoked: printed as a one-line message
@@ -53,7 +52,6 @@ function main(argv) {
         name: { type: 'string', short: 'n' },
         'org-id': { type: 'string', short: 'o' },
         user: { type: 'string', short: 'u' },
-        altitude: { type: 'string' },
         'no-git': { type: 'boolean' },
         force: { type: 'boolean', short: 'f' },
         help: { type: 'boolean', short: 'h' },
@@ -90,13 +88,6 @@ function main(argv) {
       `unknown template "${template}" (expected one of: ${templates.TEMPLATES.join(', ')})`
     );
   }
-  const altitude = values.altitude ?? 'platform';
-  if (!templates.ALTITUDES.includes(altitude)) {
-    throw new UsageError(
-      `unknown altitude "${altitude}" (expected one of: ${templates.ALTITUDES.join(', ')})`
-    );
-  }
-
   const targetDir = path.resolve(process.cwd(), positionals[0]);
   const basename = path.basename(targetDir);
 
@@ -120,7 +111,6 @@ function main(argv) {
     fileMap = templates.files({
       basename,
       template,
-      altitude,
       displayName: values.name,
       orgId: values['org-id'],
       userId: values.user,
@@ -188,6 +178,20 @@ function main(argv) {
   lines.push('  A first-time reader, human or agent, should be able to read README.md,');
   lines.push('  the kernel definition, and one initiative and be operational in 30 minutes.');
   lines.push('  If that stops being true, that is a defect worth fixing.');
+  lines.push('');
+  lines.push('If you are an AI agent creating this knowledge base for an operator:');
+  lines.push('');
+  lines.push('  1. Read AGENTS.md — "Populating a fresh scaffold" is your procedure.');
+  lines.push("  2. Populate the substrate from the operator's own context (conversation,");
+  lines.push('     documents, existing repos). Never invent facts: stub what you do not');
+  lines.push('     know and list every stub in your final report.');
+  lines.push('  3. Validate conformance, fix, and re-validate until clean:');
+  lines.push('');
+  lines.push('       npx ocp-core validate');
+  lines.push('');
+  lines.push('  4. Commit, then report the resulting structure as an outline.');
+  lines.push('');
+  lines.push('  Full directive: https://ocp.wiki/genesis.md');
   lines.push('');
   lines.push('To project this substrate (tree, access policy, scoped corpus):');
   lines.push('');

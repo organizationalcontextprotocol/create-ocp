@@ -8,7 +8,7 @@
 // time source is ctx.now, so identical inputs always produce byte-identical
 // output.
 module.exports = function rootFiles(ctx) {
-  const { orgId, displayName, userId, altitude, now, initiativeId } = ctx;
+  const { orgId, displayName, userId, now, initiativeId } = ctx;
 
   const README = `---
 artifact_type: note
@@ -26,8 +26,7 @@ members:
 settings:
   timezone: UTC
   default_language: en
-metadata:
-  altitude: ${altitude}
+metadata: {}
 ---
 
 # ${displayName}
@@ -53,10 +52,11 @@ same directory set, and any organization may hold child organizations under \`or
 an ordinary org whose \`parent_org_id\` names its parent; nothing else distinguishes it. Root vs child
 is the *only* structural distinction in OCP.
 
-Altitude (\`platform\`, \`tenant\`, \`agency\`, \`account\`, \`user\`) is **positional vocabulary you declare**,
-not a path you encode and not a capability that changes the permitted structure. This organization
-declares \`metadata.altitude: ${altitude}\`.
-See [[_system/altitude-types|the org structure definition]].
+Altitude (\`platform\`, \`tenant\`, \`agency\`, \`account\`, \`user\`) is **descriptive vocabulary for talking
+about position** — useful when you are planning the shape of your tree, and written into no file.
+There is no \`org_type\` field and no \`altitude\` field: an organization's capabilities are ordinary data
+about it, never a canonical type, and the only structural fact any artifact records is
+\`parent_org_id\`. See [[_system/altitude-types|the org structure definition]].
 
 **Access** cascades along that structure as a path-prefix decision. Admin authority cascades
 *downward*: an admin of this organization is an admin of every descendant organization. Every
@@ -152,6 +152,10 @@ Operating instructions for AI agents working in this OCP substrate. **Read [[REA
 first** — it tells you what this organization is, what its foundational facts are, and where they
 live. This file tells you how to write into it without breaking conformance.
 
+This is the **single agent-instructions file** in the substrate. There is no \`CLAUDE.md\` and you
+should not create one — agent tools, Claude Code included, read \`AGENTS.md\` when no vendor-specific
+file exists, and a second instruction file forks the source of truth.
+
 The one axiom to keep in mind: everything here is either **sovereign substrate** (authored once,
 versioned, canonical, markdown in git) or a **derived projection** (rendered on demand, disposable,
 never canonical). You are usually reading substrate and writing substrate. A context bundle, an
@@ -193,6 +197,11 @@ namespace + key → pointer table of that organization's foundational facts, who
 state is the literal line \`None declared yet.\` Consumers bind by namespace and key; only the table
 carries locations. When you move an artifact that Core Canon points at, update the row in the same
 commit.
+
+That table is also how you **resolve** an organization's facts when you read: enter through the
+org's README, look the fact up by namespace and key, and follow the pointer. Never resolve a
+foundational fact by globbing directories or assuming a path. Resolution is fail-closed — a key
+with no row means you ask the operator or log the gap to [[DISCOVERED]]; it never means you guess.
 
 ## The frontmatter contract
 
@@ -244,13 +253,62 @@ source; a confident sentence with no provenance is the failure mode this rule ex
 
 If the document is a new directory, give that directory a \`README.md\` declaring its \`role\`.
 
+## How to change a document
+
+Mutability is per type, not universal:
+
+- \`note\` — living; edit when asked, and set \`updated\`. Do not silently rewrite a human's note as a
+  side effect of another task; substantive edits deserve their own commit and reason.
+- \`adr\` — immutable once accepted. Changing a decision means a new ADR that \`supersedes\` the old
+  one; the old one is never edited.
+- \`report\` — immutable once written. Correcting one means a new report carrying \`supersedes\`.
+- \`prompt\` / \`template\` — versioned; bump the version when you change them.
+
+Working decisions too small for an ADR belong in the owning project's \`decisions.md\` — dated
+entries, append-mostly. When an entry proves load-bearing, promote it to a real ADR and leave a
+\`→ promoted to ADR-NNN (date)\` footnote behind. Ceremony escalates; it never de-escalates.
+
+## Populating a fresh scaffold
+
+If you are reading this in a freshly scaffolded substrate — stubs everywhere, an example
+initiative, an example child org — your first job is to replace the examples with the
+organization's reality. Work from the operator's own context only: the conversation that asked
+for this substrate, documents they shared, repositories they pointed you at. In one pass:
+
+1. **Identity.** Rewrite the root \`README.md\` body: what this organization is, what it sells,
+   who it serves. Update \`display_name\`, \`settings.timezone\`, and \`members\`.
+2. **Core Canon.** For each foundational fact you can ground — offers, audiences, voice, ICP —
+   create the note (\`notes/offers/<key>.md\` with \`role: offer_canon\`, \`notes/audiences/<key>.md\`
+   with \`role: audience_definition\`, \`notes/voice.md\` with \`role: voice_canon\`, \`notes/icp.md\`
+   with \`role: icp_definition\`) and add its Core Canon row in the same commit.
+3. **Structure.** One child org under \`orgs/\` per client, brand, or unit the operator named.
+   Replace the example initiative with the operator's real goal-directed work: initiative →
+   projects → at least one real ticket. Add each real human under \`_users/\` with memberships.
+4. **Never invent.** A fact you cannot ground in the operator's context becomes a visible stub
+   (\`_Describe X here._\`), never a guess — and every stub goes in your completion report.
+   Numbers are canon-legal only when anchored (value + as-of date + source); anything live stays
+   in the system that owns it, behind a pointer.
+5. **Close the loop.** Validate, fix, and re-validate until clean, then commit:
+
+   \`\`\`sh
+   npx ocp-core validate
+   \`\`\`
+
+Finish by reporting the tree you built as an outline — every org, its Core Canon rows, and the
+stubs still waiting for the operator. The full one-shot directive lives at
+https://ocp.wiki/genesis.md.
+
 ## What not to do
 
 - **Do not invent artifact types.** Five, closed. Express the new concept as a \`role\` instead.
-- **Do not author an \`org_type\` field.** It was retired. The only structural distinction is
-  root vs child, keyed on whether \`parent_org_id\` is null. Altitude is declared vocabulary, not a
-  type and not a path.
+- **Do not author an \`org_type\` field — or an \`altitude\` one.** The field was retired and the whole
+  positional axis went out of frontmatter with it, \`metadata:\` included. Altitude is descriptive
+  vocabulary you use in conversation, never a key an artifact carries. The only structural
+  distinction is root vs child, keyed on whether \`parent_org_id\` is null.
 - **Do not create \`index.md\`.** Directory entry points are \`README.md\`, always.
+- **Do not create \`CLAUDE.md\` or any vendor-specific instruction file.** This \`AGENTS.md\` is the
+  single agent-instructions file; agent tools read it when no vendor file exists, and a second file
+  forks the source of truth.
 - **Do not resurrect \`projection_definition\`.** It was retired and re-expressed as
   \`role: report_definition\` on a \`template\`.
 - **Do not put stateful runtime numbers in markdown.** Live counts, balances, and telemetry belong

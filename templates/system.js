@@ -15,7 +15,6 @@
  *   orgId: string,
  *   displayName: string,
  *   userId: string,
- *   altitude: string,
  *   template: string,
  *   now: string,
  *   childOrgId: string,
@@ -166,7 +165,7 @@ Only when both resolve to "a genuinely new sovereign category" is a sixth type o
 
 ## The composition rule
 
-A directory is legal only if it is a declared type-home permitted at that altitude — see [[_system/altitude-types]]. One classification axis per mechanism:
+A directory is legal only if it is a declared type-home permitted at that position — see [[_system/altitude-types]]. One classification axis per mechanism:
 
 | Axis | Mechanism | Law |
 | ---- | --------- | --- |
@@ -184,13 +183,15 @@ Two laws govern where things live.
 
 **The uniform subdirectory law.** Every organization — at every altitude, at any depth — permits the same canonical set of subdirectories. Capability does not change structure.
 
-**The composition rule.** A directory is legal only if it is a declared type-home ([[_system/artifact-types]]) permitted at that altitude. Altitudes may **subset** the canonical set — omit anything not needed — but may never **extend** it. Extending the canonical set requires an OCP-amending decision record in [[_adrs/README|_adrs/]].
+**The composition rule.** A directory is legal only if it is a declared type-home ([[_system/artifact-types]]) permitted at that position. An organization may **subset** the canonical set — omit anything not needed — but may never **extend** it. Extending the canonical set requires an OCP-amending decision record in [[_adrs/README|_adrs/]].
 
 ## AMENDED 2026-07-21 — the \`org_type\` field is retired
 
 > The frontmatter field formerly named \`org_type\` **no longer exists and must never be authored.** An earlier model gave each altitude its own enumerated type with its own permitted-subdirectory list, encoding a fixed tier ladder. That model is retired.
 >
 > **Capabilities are data, not canon.** Whether an organization acts as an agency, a brand, a reseller, or all three is recorded as ordinary facts — \`metadata:\` fields and Core Canon rows — not as a type in the taxonomy. An org can gain or lose a capability without changing what kind of thing it is.
+>
+> **Nor does altitude replace it.** The retirement took the whole axis out of frontmatter, not just the field name: never author \`altitude:\` either, at the top level or under \`metadata:\`. An altitude is something you say about an organization, never something an artifact declares.
 >
 > **The only structural distinction that survives is root vs. child**, keyed on \`parent_org_id == null\`. The root hosts the graph-level substrate directories; every other organization does not. That is the whole of it.
 
@@ -217,7 +218,7 @@ The permitted set governs **directories only**. Convention *files* are governed 
 
 ## The five altitudes
 
-Altitudes are **positional vocabulary a designer may occupy** — not a required ladder, and never path-encoded. An organization's altitude is declared, not inferred from how deep its directory happens to sit.
+Altitudes are **descriptive vocabulary for positions a designer may occupy** — not a required ladder, not a path you encode, and not a field you author. They are how you *talk* about the shape of a tree while planning it; no artifact records an altitude, and no tool reads one. The table below is a planning aid, not a schema.
 
 | Altitude | Definition | Typical use |
 | -------- | ---------- | ----------- |

@@ -311,9 +311,9 @@ Child organizations of ${displayName}. **This directory is where the recursion b
 
 The repository root is itself an organization — the graph root, the one with \`parent_org_id: null\`. Every organization, root or child, may contain an \`orgs/\` directory holding further organizations, to any depth. The structure is uniform: a child org has the same canonical subdirectories as its parent (\`notes/\`, \`prompts/\`, \`templates/\`, \`reports/\`, \`initiatives/\`, \`orgs/\`), and may omit any it does not need — subset, never extend.
 
-## Altitude is declared, not encoded
+## Altitude is vocabulary, not schema
 
-OCP names five altitudes — platform, tenant, agency, account, user. They are **positional vocabulary**, not directory levels and not a type ladder. A child organization's altitude is declared in its own README frontmatter; you cannot read it off the path, and you must never try. Two orgs at the same depth may sit at different altitudes, and that is legal. See [[_system/altitude-types|altitude types]].
+OCP names five altitudes — platform, tenant, agency, account, user. They are **descriptive vocabulary**, not directory levels, not a type ladder, and not a frontmatter field. Two orgs at the same depth may be described at different altitudes, and that is legal — because nothing reads the description. See [[_system/altitude-types|altitude types]].
 
 The only structural distinction that survives is **root versus child**, keyed on \`parent_org_id == null\`. Substrate directories (\`_system/\`, \`_adrs/\`, \`_kernels/\`, \`_users/\`) exist only at the graph root, because they are graph-level — never per-org.
 
@@ -347,7 +347,7 @@ metadata: {}
 
 A child organization of ${displayName}. Replace this description with what ${childDisplayName} actually is — a client account, a business unit, a subsidiary agency, a product line. Whatever it represents, the substrate treats it identically: an organization is an organization at every altitude.
 
-Its altitude is declared here in frontmatter, never inferred from where this directory sits. Its parent is \`${orgId}\`; if it ever grows children of its own, they go under \`orgs/\` right here and the recursion continues unchanged.
+Its frontmatter records exactly one structural fact: its parent is \`${orgId}\`. There is no type field and no altitude field to set — what this organization *does* is ordinary data you write in prose, in \`metadata:\`, and in Core Canon rows. If it ever grows children of its own, they go under \`orgs/\` right here and the recursion continues unchanged.
 
 ## Structure
 
